@@ -1,0 +1,17 @@
+{   "extends": "airbnb",
+    "parserOptions": {
+        "ecmaFeatures": {
+            "experimentalObjectRestSpread": true
+        }
+    },
+    "rules": {
+        "indent": ["error", 4],
+        "comma-dangle": 0,
+        "quotes": ["error", "single",{ "allowTemplateLiterals": true }],
+        "react/prefer-es6-class": 0,
+        "react/jsx-indent": [2,4],
+        "react/jsx-filename-extension": 0,
+        "react/no-unused-prop-types": 0,
+        "import/no-extraneous-dependencies": ["error", {"devDependencies": true }]
+    }
+}

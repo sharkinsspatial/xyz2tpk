@@ -1,0 +1,42 @@
+{
+  "name": "xyz2tpk",
+  "version": "1.0.0",
+  "description": "Convert tiles from an HTTP x,y,z tile endpoint into the ESRI .tpk format.",
+  "main": "index.js",
+  "scripts": {
+    "test": "babel-tape-runner \"test/*.test.js\" ",
+    "build": "babel -d bin src"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sharkinsspatial/xyz2tpk.git"
+  },
+  "author": "Sean Harkins <sharkinsgis@gmail.com> (https://github.com/sharkinsspatial)",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sharkinsspatial/xyz2tpk/issues"
+  },
+  "homepage": "https://github.com/sharkinsspatial/xyz2tpk#readme",
+  "devDependencies": {
+    "babel-cli": "^6.16.0",
+    "babel-preset-es2015": "^6.16.0",
+    "babel-preset-stage-0": "^6.16.0",
+    "babel-tape-runner": "^2.0.1",
+    "eslint": "^3.8.1",
+    "eslint-config-airbnb": "^12.0.0",
+    "eslint-plugin-import": "^1.16.0",
+    "eslint-plugin-jsx-a11y": "^2.2.3",
+    "eslint-plugin-react": "^6.4.1",
+    "rimraf": "^2.5.4",
+    "tape": "^4.6.2"
+  },
+  "dependencies": {
+    "sphericalmercator": "^1.0.5",
+    "tilejson": "^1.0.2",
+    "tilelive": "^5.12.2",
+    "tilelive-arcgis": "sharkinsspatial/tilelive-arcgis",
+    "tilelive-http": "^0.11.3",
+    "tmp": "0.0.29",
+    "xmldom": "^0.1.22"
+  }
+}
