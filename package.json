@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "babel-tape-runner \"test/*.test.js\" ",
-    "build": "babel -d bin src"
+    "watch": "babel -w src -d bin"
   },
   "repository": {
     "type": "git",
