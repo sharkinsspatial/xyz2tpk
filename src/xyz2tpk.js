@@ -1,14 +1,17 @@
 import fs from 'fs';
+import path from 'path';
 import xmldom from 'xmldom';
 import Sphericalmercator from 'sphericalmercator';
+import tilelive from 'tilelive';
+import tileliveArcGIS from 'tilelive-arcgis';
+import tileliveHttp from 'tilelive-http';
 
 const DOMParser = xmldom.DOMParser;
 const sphericalmercator = new Sphericalmercator();
 
-export function xyz2tpk(bounds, minzoom, maxzoom, name) {
-}
 export function writeConf(minzoom, maxzoom, extension, directory, callback) {
-    fs.readFile('./templateConf.xml', (err, data) => {
+    const confPath = path.resolve(__dirname, '..', 'templateConf.xml');
+    fs.readFile(confPath, (err, data) => {
         const doc = new DOMParser().parseFromString(data.toString('utf-8'));
         const levelids = doc.getElementsByTagName('LevelID');
         const nodesToRemove = [];
@@ -22,7 +25,7 @@ export function writeConf(minzoom, maxzoom, extension, directory, callback) {
         nodesToRemove.forEach((node) => {
             node.parentNode.removeChild(node);
         });
-        fs.writeFile(`${directory}/Conf.cdi`, doc, (error) => {
+        fs.writeFile(`${directory}/conf.xml`, doc, (error) => {
             if (error) callback(error);
             callback(null);
         });
@@ -30,7 +33,8 @@ export function writeConf(minzoom, maxzoom, extension, directory, callback) {
 }
 
 export function writeBounds(bounds, directory, callback) {
-    fs.readFile('./templateConf.cdi', (err, data) => {
+    const confPath = path.resolve(__dirname, '..', 'templateConf.cdi');
+    fs.readFile(confPath, (err, data) => {
         const mercatorBounds = sphericalmercator.convert(bounds, '900913');
         const doc = new DOMParser().parseFromString(data.toString('utf-8'));
         doc.getElementsByTagName('XMin')[0].textContent = mercatorBounds[0];
@@ -38,10 +42,33 @@ export function writeBounds(bounds, directory, callback) {
         doc.getElementsByTagName('XMax')[0].textContent = mercatorBounds[2];
         doc.getElementsByTagName('YMax')[0].textContent = mercatorBounds[3];
 
-        fs.writeFile(`${directory}/Conf.cdi`, doc, (error) => {
+        fs.writeFile(`${directory}/conf.cdi`, doc, (error) => {
             if (error) callback(error);
             callback(null);
         });
     });
 }
 
+export function xyz2tpk(bounds, minzoom, maxzoom, directory, token) {
+    // Register sources with tilelive
+    tileliveHttp(tilelive);
+    tileliveArcGIS.registerProtocols(tilelive);
+
+    const options = {
+        type: 'scanline',
+        close: 'true',
+        bounds,
+        minzoom,
+        maxzoom
+    };
+    const extension = 'png';
+    const httpTemplate = `http://api.tiles.mapbox.com/v4/digitalglobe.nal0g75k/{z}/{x}/{y}.${extension}?access_token=${token}`;
+    const arcgisTemplate = `arcgis://${directory}`;
+    const copy = () => {
+        tilelive.copy(httpTemplate, arcgisTemplate, options, (err) => {
+            if (err) throw err;
+            writeBounds(bounds, directory, () => {});
+        });
+    };
+    writeConf(minzoom, maxzoom, extension, directory, copy);
+}
