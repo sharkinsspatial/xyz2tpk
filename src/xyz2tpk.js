@@ -49,7 +49,7 @@ export function writeBounds(bounds, directory, callback) {
     });
 }
 
-export function xyz2tpk(bounds, minzoom, maxzoom, directory, token) {
+export function xyz2tpk(bounds, minzoom, maxzoom, directory, token, callback) {
     // Register sources with tilelive
     tileliveHttp(tilelive);
     tileliveArcGIS.registerProtocols(tilelive);
@@ -67,7 +67,7 @@ export function xyz2tpk(bounds, minzoom, maxzoom, directory, token) {
     const copy = () => {
         tilelive.copy(httpTemplate, arcgisTemplate, options, (err) => {
             if (err) throw err;
-            writeBounds(bounds, directory, () => {});
+            writeBounds(bounds, directory, callback);
         });
     };
     writeConf(minzoom, maxzoom, extension, directory, copy);

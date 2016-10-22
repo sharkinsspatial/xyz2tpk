@@ -2,7 +2,7 @@
   "name": "xyz2tpk",
   "version": "1.0.0",
   "description": "Convert tiles from an HTTP x,y,z tile endpoint into the ESRI .tpk format.",
-  "main": "index.js",
+  "main": "bin/xyz2tpk.js",
   "scripts": {
     "test": "babel-tape-runner \"test/*.test.js\" ",
     "watch": "babel -w src -d bin"
