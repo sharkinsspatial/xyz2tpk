@@ -27,6 +27,7 @@
     "eslint-plugin-import": "^1.16.0",
     "eslint-plugin-jsx-a11y": "^2.2.3",
     "eslint-plugin-react": "^6.4.1",
+    "mkdirp": "^0.5.1",
     "rimraf": "^2.5.4",
     "tape": "^4.6.2"
   },
@@ -37,6 +38,7 @@
     "tilelive-arcgis": "sharkinsspatial/tilelive-arcgis",
     "tilelive-http": "^0.11.3",
     "tmp": "0.0.29",
-    "xmldom": "^0.1.22"
+    "xmldom": "^0.1.22",
+    "zip-folder": "^1.0.0"
   }
 }

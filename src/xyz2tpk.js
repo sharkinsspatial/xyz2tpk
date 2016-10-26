@@ -5,13 +5,14 @@ import Sphericalmercator from 'sphericalmercator';
 import tilelive from 'tilelive';
 import tileliveArcGIS from 'tilelive-arcgis';
 import tileliveHttp from 'tilelive-http';
+import zipFolder from 'zip-folder';
 
 const DOMParser = xmldom.DOMParser;
-const sphericalmercator = new Sphericalmercator();
 
 export function writeConf(minzoom, maxzoom, extension, directory, callback) {
     const confPath = path.resolve(__dirname, '..', 'templateConf.xml');
     fs.readFile(confPath, (err, data) => {
+        if (err) callback(err);
         const doc = new DOMParser().parseFromString(data.toString('utf-8'));
         const levelids = doc.getElementsByTagName('LevelID');
         const nodesToRemove = [];
@@ -35,6 +36,8 @@ export function writeConf(minzoom, maxzoom, extension, directory, callback) {
 export function writeBounds(bounds, directory, callback) {
     const confPath = path.resolve(__dirname, '..', 'templateConf.cdi');
     fs.readFile(confPath, (err, data) => {
+        if (err) callback(err);
+        const sphericalmercator = new Sphericalmercator();
         const mercatorBounds = sphericalmercator.convert(bounds, '900913');
         const doc = new DOMParser().parseFromString(data.toString('utf-8'));
         doc.getElementsByTagName('XMin')[0].textContent = mercatorBounds[0];
@@ -51,12 +54,13 @@ export function writeBounds(bounds, directory, callback) {
 
 export function xyz2tpk(bounds, minzoom, maxzoom, directory, token, callback) {
     // Register sources with tilelive
-    tileliveHttp(tilelive);
+    tileliveHttp(tilelive, { retry: true });
     tileliveArcGIS.registerProtocols(tilelive);
 
     const options = {
         type: 'scanline',
         close: 'true',
+        timeout: 100000000,
         bounds,
         minzoom,
         maxzoom
@@ -66,9 +70,19 @@ export function xyz2tpk(bounds, minzoom, maxzoom, directory, token, callback) {
     const arcgisTemplate = `arcgis://${directory}`;
     const copy = () => {
         tilelive.copy(httpTemplate, arcgisTemplate, options, (err) => {
-            if (err) throw err;
+            if (err) callback(err);
             writeBounds(bounds, directory, callback);
         });
     };
     writeConf(minzoom, maxzoom, extension, directory, copy);
+}
+
+export function ziptpk(directory, callback) {
+    const tmpDirectory = path.resolve(directory, '..');
+    const name = path.basename(directory);
+    const zipFile = path.resolve(tmpDirectory, `${name}.tpk`);
+    zipFolder(directory, zipFile, (err) => {
+        if (err) callback(err);
+        callback();
+    });
 }
