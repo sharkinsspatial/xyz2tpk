@@ -52,6 +52,16 @@ export function writeBounds(bounds, directory, callback) {
     });
 }
 
+export function ziptpk(directory, callback) {
+    const tmpDirectory = path.resolve(directory, '..');
+    const name = path.basename(directory);
+    const zipFile = path.resolve(tmpDirectory, `${name}.tpk`);
+    zipFolder(directory, zipFile, (err) => {
+        if (err) callback(err);
+        callback();
+    });
+}
+
 export function xyz2tpk(bounds, minzoom, maxzoom, directory, token, callback) {
     // Register sources with tilelive
     tileliveHttp(tilelive, { retry: true });
@@ -68,21 +78,13 @@ export function xyz2tpk(bounds, minzoom, maxzoom, directory, token, callback) {
     const extension = 'png';
     const httpTemplate = `http://api.tiles.mapbox.com/v4/digitalglobe.nal0g75k/{z}/{x}/{y}.${extension}?access_token=${token}`;
     const arcgisTemplate = `arcgis://${directory}`;
+    const ziptpkCall = ziptpk.bind(null, directory, callback);
     const copy = () => {
         tilelive.copy(httpTemplate, arcgisTemplate, options, (err) => {
             if (err) callback(err);
-            writeBounds(bounds, directory, callback);
+            writeBounds(bounds, directory, ziptpkCall);
         });
     };
     writeConf(minzoom, maxzoom, extension, directory, copy);
 }
 
-export function ziptpk(directory, callback) {
-    const tmpDirectory = path.resolve(directory, '..');
-    const name = path.basename(directory);
-    const zipFile = path.resolve(tmpDirectory, `${name}.tpk`);
-    zipFolder(directory, zipFile, (err) => {
-        if (err) callback(err);
-        callback();
-    });
-}
