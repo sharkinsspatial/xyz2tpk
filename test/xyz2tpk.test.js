@@ -4,7 +4,7 @@ import path from 'path';
 import rimraf from 'rimraf';
 import xmldom from 'xmldom';
 import mkdirp from 'mkdirp';
-import { writeBounds, writeConf, ziptpk, generateDirectories }
+import { writeBounds, writeConf, ziptpk, generateDirectories, writeJson }
     from '../src/xyz2tpk';
 import box from './testBox';
 
@@ -15,8 +15,22 @@ const serviceDescPath = path.join(__dirname, '/testtmp', tpkName,
                                   'servicedescriptions', 'mapserver');
 const testtmp = path.join(__dirname, '/testtmp');
 
+test('generateDirectories', (t) => {
+    t.plan(2);
+    const outPath = path.resolve(testtmp, tpkName);
+    generateDirectories(outPath).then(() => {
+        fs.stat(tpkpath, (err) => {
+            t.error(err);
+        });
+        fs.stat(serviceDescPath, (err) => {
+            t.error(err);
+        });
+    });
+});
+
 test('setup', (t) => {
     mkdirp.sync(tpkpath);
+    mkdirp.sync(serviceDescPath);
     t.end();
 });
 
@@ -32,6 +46,16 @@ test('writeConf', (t) => {
             const levelids = doc.getElementsByTagName('LevelID');
             t.equals(levelids.length, 3);
         });
+    });
+});
+
+test('writeJson', (t) => {
+    t.plan(1);
+    const minzoom = 2;
+    const maxzoom = 4;
+    const paths = { serviceDescPath };
+    writeJson(minzoom, maxzoom, box, paths).then(() => {
+        t.ok(true);
     });
 });
 
@@ -55,19 +79,6 @@ test('writeBounds', (t) => {
     });
 });
 
-
-test('generateDirectories', (t) => {
-    t.plan(2);
-    const outPath = path.resolve(testtmp, tpkName);
-    generateDirectories(outPath).then(() => {
-        fs.stat(tpkpath, (err) => {
-            t.error(err);
-        });
-        fs.stat(serviceDescPath, (err) => {
-            t.error(err);
-        });
-    });
-});
 
 test('ziptpk', (t) => {
     t.plan(1);

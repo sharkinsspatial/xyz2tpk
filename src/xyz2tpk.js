@@ -7,6 +7,7 @@ import tileliveArcGIS from 'tilelive-arcgis';
 import tileliveHttp from 'tilelive-http';
 import archiver from 'archiver';
 import mkdirp from 'mkdirp';
+import jsonfile from 'jsonfile';
 
 const DOMParser = xmldom.DOMParser;
 
@@ -36,13 +37,18 @@ export function writeConf(minzoom, maxzoom, paths) {
     });
 }
 
+function boundsToMercator(bounds) {
+    const sphericalmercator = new Sphericalmercator();
+    const mercatorBounds = sphericalmercator.convert(bounds, '900913');
+    return mercatorBounds;
+}
+
 export function writeBounds(bounds, paths) {
     const confPath = path.resolve(__dirname, '..', 'templateConf.cdi');
     return new Promise((resolve, reject) => {
         fs.readFile(confPath, (err, data) => {
             if (err) reject(err);
-            const sphericalmercator = new Sphericalmercator();
-            const mercatorBounds = sphericalmercator.convert(bounds, '900913');
+            const mercatorBounds = boundsToMercator(bounds);
             const doc = new DOMParser().parseFromString(data.toString('utf-8'));
             doc.getElementsByTagName('XMin')[0].textContent = mercatorBounds[0];
             doc.getElementsByTagName('YMin')[0].textContent = mercatorBounds[1];
@@ -52,6 +58,41 @@ export function writeBounds(bounds, paths) {
                 if (error) reject(error);
                 resolve(paths.layerPath);
             });
+        });
+    });
+}
+
+export function writeJson(minzoom, maxzoom, bounds, paths) {
+    const templatePath = path.resolve(__dirname, '..', 'templateMapServer.json');
+    const mercatorBounds = boundsToMercator(bounds);
+    return new Promise((resolve, reject) => {
+        jsonfile.readFile(templatePath, (err, file) => {
+            if (err) reject(err);
+            const obj = file;
+            obj.contents.fullExtent.xmin = mercatorBounds[0];
+            obj.contents.fullExtent.ymin = mercatorBounds[1];
+            obj.contents.fullExtent.xmax = mercatorBounds[2];
+            obj.contents.fullExtent.ymax = mercatorBounds[3];
+
+            obj.contents.initialExtent.xmin = mercatorBounds[0];
+            obj.contents.initialExtent.ymin = mercatorBounds[1];
+            obj.contents.initialExtent.xmax = mercatorBounds[2];
+            obj.contents.initialExtent.ymax = mercatorBounds[3];
+
+            const minLod = obj.contents.tileInfo
+                .lods.find(lod => lod.level === minzoom);
+            obj.contents.minScale = minLod.scale;
+
+
+            const maxLod = obj.contents.tileInfo
+                .lods.find(lod => lod.level === maxzoom);
+            obj.contents.maxScale = maxLod.scale;
+
+            jsonfile.writeFile(`${paths.serviceDescPath}/mapserver.json`, obj,
+                               (error) => {
+                                   if (error) reject(error);
+                                   resolve(paths);
+                               });
         });
     });
 }
@@ -118,6 +159,7 @@ export function copyTiles(bounds, minzoom, maxzoom, token, layerPath) {
 export function xyz2tpk(bounds, minzoom, maxzoom, token, directory, callback) {
     generateDirectories(directory)
         .then(writeConf.bind(null, minzoom, maxzoom))
+        .then(writeJson.bind(null, minzoom, maxzoom, bounds))
         .then(writeBounds.bind(null, bounds))
         .then(copyTiles.bind(null, bounds, minzoom, maxzoom, token))
         .then(ziptpk)
