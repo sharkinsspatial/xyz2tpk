@@ -11,6 +11,8 @@ import box from './testBox';
 const DOMParser = xmldom.DOMParser;
 const tpkName = 'tpk';
 const tpkpath = path.join(__dirname, '/testtmp', tpkName, 'v101', 'Layers');
+const serviceDescPath = path.join(__dirname, '/testtmp', tpkName,
+                                  'servicedescriptions', 'mapserver');
 const testtmp = path.join(__dirname, '/testtmp');
 
 test('setup', (t) => {
@@ -22,7 +24,8 @@ test('writeConf', (t) => {
     t.plan(1);
     const minzoom = 2;
     const maxzoom = 4;
-    writeConf(minzoom, maxzoom, null, tpkpath, () => {
+    const paths = { layerPath: tpkpath };
+    writeConf(minzoom, maxzoom, paths).then(() => {
         const confPath = path.join(tpkpath, 'Conf.xml');
         fs.readFile(confPath, (readErr, data) => {
             const doc = new DOMParser().parseFromString(data.toString('utf-8'));
@@ -37,9 +40,10 @@ test('writeBounds', (t) => {
     const ymin = '3856936.010241706';
     const xmax = '-13040959.614248065';
     const ymax = '3858273.658236698';
+    const paths = { layerPath: tpkpath };
 
     t.plan(4);
-    writeBounds(box, tpkpath, () => {
+    writeBounds(box, paths).then(() => {
         const confPath = path.join(tpkpath, 'Conf.cdi');
         fs.readFile(confPath, (readErr, data) => {
             const doc = new DOMParser().parseFromString(data.toString('utf-8'));
@@ -51,21 +55,25 @@ test('writeBounds', (t) => {
     });
 });
 
-test('ziptpk', (t) => {
-    t.plan(1);
-    const tpkfile = path.resolve(testtmp, tpkName);
-    ziptpk(tpkpath, () => {
-        fs.stat(tpkfile, (err) => {
+
+test('generateDirectories', (t) => {
+    t.plan(2);
+    const outPath = path.resolve(testtmp, tpkName);
+    generateDirectories(outPath).then(() => {
+        fs.stat(tpkpath, (err) => {
+            t.error(err);
+        });
+        fs.stat(serviceDescPath, (err) => {
             t.error(err);
         });
     });
 });
 
-test('generateDirectories', (t) => {
+test('ziptpk', (t) => {
     t.plan(1);
-    const outPath = path.resolve(testtmp, tpkName);
-    generateDirectories(outPath, () => {
-        fs.stat(outPath, (err) => {
+    const tpkfile = path.resolve(testtmp, tpkName);
+    ziptpk(tpkpath).then(() => {
+        fs.stat(tpkfile, (err) => {
             t.error(err);
         });
     });
