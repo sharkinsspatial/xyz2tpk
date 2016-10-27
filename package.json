@@ -32,13 +32,13 @@
     "tape": "^4.6.2"
   },
   "dependencies": {
+    "archiver": "^1.1.0",
     "sphericalmercator": "^1.0.5",
     "tilejson": "^1.0.2",
     "tilelive": "^5.12.2",
     "tilelive-arcgis": "sharkinsspatial/tilelive-arcgis",
     "tilelive-http": "^0.11.3",
     "tmp": "0.0.29",
-    "xmldom": "^0.1.22",
-    "zip-folder": "^1.0.0"
+    "xmldom": "^0.1.22"
   }
 }

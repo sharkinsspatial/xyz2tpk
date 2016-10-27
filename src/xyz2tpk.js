@@ -5,7 +5,8 @@ import Sphericalmercator from 'sphericalmercator';
 import tilelive from 'tilelive';
 import tileliveArcGIS from 'tilelive-arcgis';
 import tileliveHttp from 'tilelive-http';
-import zipFolder from 'zip-folder';
+import archiver from 'archiver';
+import mkdirp from 'mkdirp';
 
 const DOMParser = xmldom.DOMParser;
 
@@ -26,7 +27,7 @@ export function writeConf(minzoom, maxzoom, extension, directory, callback) {
         nodesToRemove.forEach((node) => {
             node.parentNode.removeChild(node);
         });
-        fs.writeFile(`${directory}/conf.xml`, doc, (error) => {
+        fs.writeFile(`${directory}/Conf.xml`, doc, (error) => {
             if (error) callback(error);
             callback(null);
         });
@@ -44,8 +45,7 @@ export function writeBounds(bounds, directory, callback) {
         doc.getElementsByTagName('YMin')[0].textContent = mercatorBounds[1];
         doc.getElementsByTagName('XMax')[0].textContent = mercatorBounds[2];
         doc.getElementsByTagName('YMax')[0].textContent = mercatorBounds[3];
-
-        fs.writeFile(`${directory}/conf.cdi`, doc, (error) => {
+        fs.writeFile(`${directory}/Conf.cdi`, doc, (error) => {
             if (error) callback(error);
             callback(null);
         });
@@ -53,12 +53,33 @@ export function writeBounds(bounds, directory, callback) {
 }
 
 export function ziptpk(directory, callback) {
-    const tmpDirectory = path.resolve(directory, '..');
+    const tmpDirectory = path.resolve(directory, '..', '..', '..');
     const name = path.basename(directory);
     const zipFile = path.resolve(tmpDirectory, `${name}.tpk`);
-    zipFolder(directory, zipFile, (err) => {
-        if (err) callback(err);
+
+    const output = fs.createWriteStream(zipFile);
+    const archive = archiver('zip');
+    archive.on('error', (err) => {
+        callback(err);
+    });
+    archive.pipe(output);
+    archive.directory(directory, '');
+    archive.finalize();
+    output.on('close', () => {
         callback();
+    });
+}
+
+export function generateDirectories(directory, callback) {
+    const layerPath = path.resolve(directory, 'v101', 'Layers');
+    const serviceDescPath = path.resolve(directory, 'servicedescriptions',
+                                         'mapserver');
+    mkdirp(layerPath, (error) => {
+        if (error) callback(error);
+        mkdirp(serviceDescPath, (err) => {
+            if (err) callback(err);
+            callback();
+        });
     });
 }
 

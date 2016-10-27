@@ -4,16 +4,17 @@ import path from 'path';
 import rimraf from 'rimraf';
 import xmldom from 'xmldom';
 import mkdirp from 'mkdirp';
-import { writeBounds, writeConf, ziptpk } from '../src/xyz2tpk';
+import { writeBounds, writeConf, ziptpk, generateDirectories }
+    from '../src/xyz2tpk';
 import box from './testBox';
 
 const DOMParser = xmldom.DOMParser;
 const tpkName = 'tpk';
-const testtpk = path.join(__dirname, '/testtmp', tpkName);
-const testtemp = path.dirname(testtpk);
+const tpkpath = path.join(__dirname, '/testtmp', tpkName, 'v101', 'Layers');
+const testtmp = path.join(__dirname, '/testtmp');
 
 test('setup', (t) => {
-    mkdirp(testtpk);
+    mkdirp.sync(tpkpath);
     t.end();
 });
 
@@ -21,8 +22,8 @@ test('writeConf', (t) => {
     t.plan(1);
     const minzoom = 2;
     const maxzoom = 4;
-    writeConf(minzoom, maxzoom, null, testtpk, () => {
-        const confPath = path.join(testtpk, 'Conf.xml');
+    writeConf(minzoom, maxzoom, null, tpkpath, () => {
+        const confPath = path.join(tpkpath, 'Conf.xml');
         fs.readFile(confPath, (readErr, data) => {
             const doc = new DOMParser().parseFromString(data.toString('utf-8'));
             const levelids = doc.getElementsByTagName('LevelID');
@@ -38,8 +39,8 @@ test('writeBounds', (t) => {
     const ymax = '3858273.658236698';
 
     t.plan(4);
-    writeBounds(box, testtpk, () => {
-        const confPath = path.join(testtpk, 'Conf.cdi');
+    writeBounds(box, tpkpath, () => {
+        const confPath = path.join(tpkpath, 'Conf.cdi');
         fs.readFile(confPath, (readErr, data) => {
             const doc = new DOMParser().parseFromString(data.toString('utf-8'));
             t.equals(doc.getElementsByTagName('XMin')[0].textContent, xmin);
@@ -52,15 +53,25 @@ test('writeBounds', (t) => {
 
 test('ziptpk', (t) => {
     t.plan(1);
-    const tpkfile = path.resolve(testtemp, tpkName);
-    ziptpk(testtpk, () => {
+    const tpkfile = path.resolve(testtmp, tpkName);
+    ziptpk(tpkpath, () => {
         fs.stat(tpkfile, (err) => {
             t.error(err);
         });
     });
 });
 
+test('generateDirectories', (t) => {
+    t.plan(1);
+    const outPath = path.resolve(testtmp, tpkName);
+    generateDirectories(outPath, () => {
+        fs.stat(outPath, (err) => {
+            t.error(err);
+        });
+    });
+});
+
 test.onFinish(() => {
-    rimraf(testtemp, () => {
+    rimraf(testtmp, () => {
     });
 });
