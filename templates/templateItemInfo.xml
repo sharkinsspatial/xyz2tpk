@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ESRI_ItemInformation Culture='en-US'>
+<name>Layers</name>
+<guid>A61F4C1F-2CE5-4225-AC82-07C198A005BD</guid>
+<catalogpath></catalogpath>
+<snippet></snippet>
+<description></description>
+<summary></summary>
+<title>Layers</title>
+<tags></tags>
+<type>Tile Package</type>
+<typekeywords>
+<typekeyword>Data</typekeyword>
+<typekeyword>Tile Package</typekeyword>
+<typekeyword>ArcMap</typekeyword>
+<typekeyword>ArcGlobe</typekeyword>
+<typekeyword>tpk</typekeyword>
+</typekeywords>
+<thumbnail>thumbnail/thumbnail.png</thumbnail>
+<documentation></documentation>
+<url></url>
+<datalastmodifiedtime></datalastmodifiedtime>
+<spatialreference>None</spatialreference>
+<accessinformation></accessinformation>
+<licenseinfo></licenseinfo>
+</ESRI_ItemInformation>

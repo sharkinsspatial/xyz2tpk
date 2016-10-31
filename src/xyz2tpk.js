@@ -1,4 +1,4 @@
-import fs from 'fs';
+import fs from 'fs-extra';
 import path from 'path';
 import xmldom from 'xmldom';
 import Sphericalmercator from 'sphericalmercator';
@@ -10,9 +10,10 @@ import mkdirp from 'mkdirp';
 import jsonfile from 'jsonfile';
 
 const DOMParser = xmldom.DOMParser;
+const templatePath = path.resolve(__dirname, '..', 'templates');
 
 export function writeConf(minzoom, maxzoom, paths) {
-    const confPath = path.resolve(__dirname, '..', 'templateConf.xml');
+    const confPath = path.resolve(templatePath, 'templateConf.xml');
     return new Promise((resolve, reject) => {
         fs.readFile(confPath, (err, data) => {
             if (err) reject(err);
@@ -44,7 +45,7 @@ function boundsToMercator(bounds) {
 }
 
 export function writeBounds(bounds, paths) {
-    const confPath = path.resolve(__dirname, '..', 'templateConf.cdi');
+    const confPath = path.resolve(templatePath, 'templateConf.cdi');
     return new Promise((resolve, reject) => {
         fs.readFile(confPath, (err, data) => {
             if (err) reject(err);
@@ -62,11 +63,29 @@ export function writeBounds(bounds, paths) {
     });
 }
 
+export function writeItemInfo(paths) {
+    const itemTemplatePath = path.resolve(templatePath, 'templateItem.pkinfo');
+    const itemInfoTemplatePath = path.resolve(templatePath,
+                                              'templateItemInfo.xml');
+    return new Promise((resolve, reject) => {
+        fs.copy(itemTemplatePath, `${paths.esriInfoPath}/item.pkinfo`,
+                (err) => {
+                    if (err) reject(err);
+                    fs.copy(itemInfoTemplatePath,
+                            `${paths.esriInfoPath}/iteminfo.xml`,
+                            (error) => {
+                                if (error) reject(error);
+                                resolve(paths);
+                            });
+                });
+    });
+}
+
 export function writeJson(minzoom, maxzoom, bounds, paths) {
-    const templatePath = path.resolve(__dirname, '..', 'templateMapServer.json');
+    const jsonPath = path.resolve(templatePath, 'templateMapServer.json');
     const mercatorBounds = boundsToMercator(bounds);
     return new Promise((resolve, reject) => {
-        jsonfile.readFile(templatePath, (err, file) => {
+        jsonfile.readFile(jsonPath, (err, file) => {
             if (err) reject(err);
             const obj = file;
             obj.contents.fullExtent.xmin = mercatorBounds[0];
@@ -82,7 +101,6 @@ export function writeJson(minzoom, maxzoom, bounds, paths) {
             const minLod = obj.contents.tileInfo
                 .lods.find(lod => lod.level === minzoom);
             obj.contents.minScale = minLod.scale;
-
 
             const maxLod = obj.contents.tileInfo
                 .lods.find(lod => lod.level === maxzoom);
@@ -102,6 +120,7 @@ export function ziptpk(layerPath) {
     const name = path.resolve(layerPath, '..', '..');
     const zipFile = path.resolve(tmpDirectory, `${name}.tpk`);
     const output = fs.createWriteStream(zipFile);
+    // 0 compression works with ArcGIS online but not Collector
     const archive = archiver('zip');
     return new Promise((resolve, reject) => {
         archive.on('error', (err) => {
@@ -133,6 +152,7 @@ export function generateDirectories(directory) {
 }
 export function copyTiles(bounds, minzoom, maxzoom, token, layerPath) {
     // Register sources with tilelive
+    // Will fail on http without retry true.
     tileliveHttp(tilelive, { retry: true });
     tileliveArcGIS.registerProtocols(tilelive);
 

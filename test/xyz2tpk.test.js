@@ -4,7 +4,8 @@ import path from 'path';
 import rimraf from 'rimraf';
 import xmldom from 'xmldom';
 import mkdirp from 'mkdirp';
-import { writeBounds, writeConf, ziptpk, generateDirectories, writeJson }
+import { writeBounds, writeConf, ziptpk, generateDirectories, writeJson,
+    writeItemInfo }
     from '../src/xyz2tpk';
 import box from './testBox';
 
@@ -13,6 +14,7 @@ const tpkName = 'tpk';
 const tpkpath = path.join(__dirname, '/testtmp', tpkName, 'v101', 'Layers');
 const serviceDescPath = path.join(__dirname, '/testtmp', tpkName,
                                   'servicedescriptions', 'mapserver');
+const esriInfoPath = path.join(__dirname, '/testtmp', tpkName, 'esriinfo');
 const testtmp = path.join(__dirname, '/testtmp');
 
 test('generateDirectories', (t) => {
@@ -31,6 +33,7 @@ test('generateDirectories', (t) => {
 test('setup', (t) => {
     mkdirp.sync(tpkpath);
     mkdirp.sync(serviceDescPath);
+    mkdirp.sync(esriInfoPath);
     t.end();
 });
 
@@ -79,6 +82,20 @@ test('writeBounds', (t) => {
     });
 });
 
+test('writeItemInfo', (t) => {
+    t.plan(2);
+    const paths = { esriInfoPath };
+    const item = path.resolve(esriInfoPath, 'item.pkinfo');
+    const iteminfo = path.resolve(esriInfoPath, 'iteminfo.xml');
+    writeItemInfo(paths).then(() => {
+        fs.stat(item, (err) => {
+            t.error(err);
+            fs.stat(iteminfo, (error) => {
+                t.error(error);
+            });
+        });
+    });
+});
 
 test('ziptpk', (t) => {
     t.plan(1);
