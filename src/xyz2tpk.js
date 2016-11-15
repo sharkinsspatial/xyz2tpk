@@ -121,7 +121,8 @@ export function ziptpk(layerPath) {
     const zipFile = path.resolve(tmpDirectory, `${name}.tpk`);
     const output = fs.createWriteStream(zipFile);
     // 0 compression works with ArcGIS online but not Collector
-    const archive = archiver('zip');
+    const archive = archiver('zip', { store: true });
+    // const archive = archiver('zip');
     return new Promise((resolve, reject) => {
         archive.on('error', (err) => {
             reject(err);
@@ -183,7 +184,7 @@ export function xyz2tpk(bounds, minzoom, maxzoom, token, directory, callback) {
         .then(writeBounds.bind(null, bounds))
         .then(copyTiles.bind(null, bounds, minzoom, maxzoom, token))
         .then(ziptpk)
-        .then(() => callback())
+        .then(zipFile => callback(null, zipFile))
         .catch(callback);
 }
 
