@@ -159,13 +159,17 @@ export function generateDirectories(directory) {
     const layerPath = path.resolve(directory, 'v101', 'Layers');
     const serviceDescPath = path.resolve(directory, 'servicedescriptions',
                                          'mapserver');
-    const paths = { layerPath, serviceDescPath };
+    const esriInfoPath = path.resolve(directory, 'esriinfo');
+    const paths = { layerPath, serviceDescPath, esriInfoPath };
     return new Promise((resolve, reject) => {
         mkdirp(layerPath, (layerPathErr) => {
             if (layerPathErr) reject(layerPathErr);
             mkdirp(serviceDescPath, (serviceDescPathError) => {
                 if (serviceDescPathError) reject(serviceDescPathError);
-                resolve(paths);
+                mkdirp(esriInfoPath, (esriInfoPathError) => {
+                    if (esriInfoPathError) reject(esriInfoPathError);
+                    resolve(paths);
+                });
             });
         });
     });
@@ -210,6 +214,7 @@ export function xyz2tpk(bounds, minzoom, maxzoom, token, directory, callback) {
     generateDirectories(directory)
         .then(writeLyrFile)
         .then(writeConf.bind(null, minzoom, maxzoom, format))
+        .then(writeItemInfo)
         .then(writeJson.bind(null, minzoom, maxzoom, bounds))
         .then(writeBounds.bind(null, bounds))
         .then(copyTiles.bind(null, bounds, minzoom, maxzoom, token, format))

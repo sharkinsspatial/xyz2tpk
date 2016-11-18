@@ -11,27 +11,32 @@ import box from './testBox';
 
 const DOMParser = xmldom.DOMParser;
 const tpkName = 'tpk';
-const tpkpath = path.join(__dirname, '/testtmp', tpkName, 'v101', 'Layers');
+const layerPath = path.join(__dirname, '/testtmp', tpkName, 'v101', 'Layers');
 const serviceDescPath = path.join(__dirname, '/testtmp', tpkName,
                                   'servicedescriptions', 'mapserver');
 const esriInfoPath = path.join(__dirname, '/testtmp', tpkName, 'esriinfo');
 const testtmp = path.join(__dirname, '/testtmp');
 
 test('generateDirectories', (t) => {
-    t.plan(2);
+    t.plan(4);
     const outPath = path.resolve(testtmp, tpkName);
-    generateDirectories(outPath).then(() => {
-        fs.stat(tpkpath, (err) => {
+    generateDirectories(outPath).then((paths) => {
+        fs.stat(layerPath, (err) => {
             t.error(err);
         });
         fs.stat(serviceDescPath, (err) => {
             t.error(err);
         });
+        fs.stat(esriInfoPath, (err) => {
+            t.error(err);
+        });
+        t.deepEqual(paths, { layerPath, serviceDescPath, esriInfoPath },
+                   'paths object is equal');
     });
 });
 
 test('setup', (t) => {
-    mkdirp.sync(tpkpath);
+    mkdirp.sync(layerPath);
     mkdirp.sync(serviceDescPath);
     mkdirp.sync(esriInfoPath);
     t.end();
@@ -41,9 +46,9 @@ test('writeConf', (t) => {
     t.plan(3);
     const minzoom = 2;
     const maxzoom = 4;
-    const paths = { layerPath: tpkpath };
+    const paths = { layerPath };
     writeConf(minzoom, maxzoom, 'jpg90', paths).then(() => {
-        const confPath = path.join(tpkpath, 'Conf.xml');
+        const confPath = path.join(layerPath, 'Conf.xml');
         fs.readFile(confPath, (readErr, data) => {
             const doc = new DOMParser().parseFromString(data.toString('utf-8'));
             const levelids = doc.getElementsByTagName('LevelID');
@@ -55,7 +60,7 @@ test('writeConf', (t) => {
         });
     }).then(() => {
         writeConf(minzoom, maxzoom, 'png32', paths).then(() => {
-            const confPath = path.join(tpkpath, 'Conf.xml');
+            const confPath = path.join(layerPath, 'Conf.xml');
             fs.readFile(confPath, (readErr, data) => {
                 const doc = new DOMParser().parseFromString(data.toString('utf-8'));
                 const format = doc.getElementsByTagName('CacheTileFormat')[0]
@@ -81,11 +86,11 @@ test('writeBounds', (t) => {
     const ymin = '3856936.010241706';
     const xmax = '-13040959.614248065';
     const ymax = '3858273.658236698';
-    const paths = { layerPath: tpkpath };
+    const paths = { layerPath };
 
     t.plan(4);
     writeBounds(box, paths).then(() => {
-        const confPath = path.join(tpkpath, 'Conf.cdi');
+        const confPath = path.join(layerPath, 'Conf.cdi');
         fs.readFile(confPath, (readErr, data) => {
             const doc = new DOMParser().parseFromString(data.toString('utf-8'));
             t.equals(doc.getElementsByTagName('XMin')[0].textContent, xmin);
@@ -97,7 +102,7 @@ test('writeBounds', (t) => {
 });
 
 test('writeLyrFile', (t) => {
-    const paths = { layerPath: tpkpath };
+    const paths = { layerPath };
     t.plan(1);
     writeLyrFile(paths).then(() => {
         const lyrFile = path.resolve(paths.layerPath, '..', 'Layers.lyr');
@@ -125,7 +130,7 @@ test('writeItemInfo', (t) => {
 test('ziptpk', (t) => {
     t.plan(1);
     const tpkfile = path.resolve(testtmp, tpkName);
-    ziptpk(tpkpath).then(() => {
+    ziptpk(layerPath).then(() => {
         fs.stat(tpkfile, (err) => {
             t.error(err);
         });

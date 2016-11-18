@@ -249,7 +249,7 @@ function copyTiles(bounds, minzoom, maxzoom, token, format, layerPath) {
 
 function xyz2tpk(bounds, minzoom, maxzoom, token, directory, callback) {
     var format = 'jpg90';
-    generateDirectories(directory).then(writeLyrFile).then(writeConf.bind(null, minzoom, maxzoom, format)).then(writeJson.bind(null, minzoom, maxzoom, bounds)).then(writeBounds.bind(null, bounds)).then(copyTiles.bind(null, bounds, minzoom, maxzoom, token, format)).then(ziptpk).then(function (zipFile) {
+    generateDirectories(directory).then(writeLyrFile).then(writeConf.bind(null, minzoom, maxzoom, format)).then(writeItemInfo).then(writeJson.bind(null, minzoom, maxzoom, bounds)).then(writeBounds.bind(null, bounds)).then(copyTiles.bind(null, bounds, minzoom, maxzoom, token, format)).then(ziptpk).then(function (zipFile) {
         return callback(null, zipFile);
     }).catch(callback);
 }
