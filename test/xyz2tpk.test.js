@@ -5,7 +5,7 @@ import rimraf from 'rimraf';
 import xmldom from 'xmldom';
 import mkdirp from 'mkdirp';
 import { writeBounds, writeConf, ziptpk, generateDirectories, writeJson,
-    writeItemInfo }
+    writeItemInfo, writeLyrFile }
     from '../src/xyz2tpk';
 import box from './testBox';
 
@@ -38,16 +38,30 @@ test('setup', (t) => {
 });
 
 test('writeConf', (t) => {
-    t.plan(1);
+    t.plan(3);
     const minzoom = 2;
     const maxzoom = 4;
     const paths = { layerPath: tpkpath };
-    writeConf(minzoom, maxzoom, paths).then(() => {
+    writeConf(minzoom, maxzoom, 'jpg90', paths).then(() => {
         const confPath = path.join(tpkpath, 'Conf.xml');
         fs.readFile(confPath, (readErr, data) => {
             const doc = new DOMParser().parseFromString(data.toString('utf-8'));
             const levelids = doc.getElementsByTagName('LevelID');
             t.equals(levelids.length, 3);
+
+            const format = doc.getElementsByTagName('CacheTileFormat')[0]
+                .textContent;
+            t.equals(format, 'JPEG', 'creates proper jpg format');
+        });
+    }).then(() => {
+        writeConf(minzoom, maxzoom, 'png32', paths).then(() => {
+            const confPath = path.join(tpkpath, 'Conf.xml');
+            fs.readFile(confPath, (readErr, data) => {
+                const doc = new DOMParser().parseFromString(data.toString('utf-8'));
+                const format = doc.getElementsByTagName('CacheTileFormat')[0]
+                    .textContent;
+                t.equals(format, 'PNG32', 'creates proper non-jpg format');
+            });
         });
     });
 });
@@ -78,6 +92,17 @@ test('writeBounds', (t) => {
             t.equals(doc.getElementsByTagName('YMin')[0].textContent, ymin);
             t.equals(doc.getElementsByTagName('XMax')[0].textContent, xmax);
             t.equals(doc.getElementsByTagName('YMax')[0].textContent, ymax);
+        });
+    });
+});
+
+test('writeLyrFile', (t) => {
+    const paths = { layerPath: tpkpath };
+    t.plan(1);
+    writeLyrFile(paths).then(() => {
+        const lyrFile = path.resolve(paths.layerPath, '..', 'Layers.lyr');
+        fs.stat(lyrFile, (err) => {
+            t.error(err);
         });
     });
 });

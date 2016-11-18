@@ -7,8 +7,10 @@ exports.writeConf = writeConf;
 exports.writeBounds = writeBounds;
 exports.writeItemInfo = writeItemInfo;
 exports.writeJson = writeJson;
+exports.writeLyrFile = writeLyrFile;
 exports.ziptpk = ziptpk;
 exports.generateDirectories = generateDirectories;
+exports.deleteTempDirectory = deleteTempDirectory;
 exports.copyTiles = copyTiles;
 exports.xyz2tpk = xyz2tpk;
 
@@ -57,7 +59,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 var DOMParser = _xmldom2.default.DOMParser;
 var templatePath = _path2.default.resolve(__dirname, '..', 'templates');
 
-function writeConf(minzoom, maxzoom, paths) {
+function writeConf(minzoom, maxzoom, format, paths) {
     var confPath = _path2.default.resolve(templatePath, 'templateConf.xml');
     return new Promise(function (resolve, reject) {
         _fsExtra2.default.readFile(confPath, function (err, data) {
@@ -75,7 +77,15 @@ function writeConf(minzoom, maxzoom, paths) {
             nodesToRemove.forEach(function (node) {
                 node.parentNode.removeChild(node);
             });
-            _fsExtra2.default.writeFile(paths.layerPath + '/Conf.xml', doc, function (error) {
+            var formattedFormat = null;
+            if (format.substring(0, 3) === 'jpg') {
+                formattedFormat = 'JPEG';
+            } else {
+                formattedFormat = format.toUpperCase();
+            }
+            doc.getElementsByTagName('CacheTileFormat')[0].textContent = formattedFormat;
+
+            _fsExtra2.default.writeFile(paths.layerPath + '/conf.xml', doc, function (error) {
                 if (error) reject(error);
                 resolve(paths);
             });
@@ -100,7 +110,7 @@ function writeBounds(bounds, paths) {
             doc.getElementsByTagName('YMin')[0].textContent = mercatorBounds[1];
             doc.getElementsByTagName('XMax')[0].textContent = mercatorBounds[2];
             doc.getElementsByTagName('YMax')[0].textContent = mercatorBounds[3];
-            _fsExtra2.default.writeFile(paths.layerPath + '/Conf.cdi', doc, function (error) {
+            _fsExtra2.default.writeFile(paths.layerPath + '/conf.cdi', doc, function (error) {
                 if (error) reject(error);
                 resolve(paths.layerPath);
             });
@@ -157,6 +167,16 @@ function writeJson(minzoom, maxzoom, bounds, paths) {
     });
 }
 
+function writeLyrFile(paths) {
+    var lyrFilePath = _path2.default.resolve(paths.layerPath, '..', 'Layers.lyr');
+    return new Promise(function (resolve, reject) {
+        _fsExtra2.default.writeFile(lyrFilePath, null, function (err) {
+            if (err) reject(err);
+            resolve(paths);
+        });
+    });
+}
+
 function ziptpk(layerPath) {
     var tmpDirectory = _path2.default.resolve(layerPath, '..', '..', '..');
     var name = _path2.default.resolve(layerPath, '..', '..');
@@ -164,7 +184,7 @@ function ziptpk(layerPath) {
     var output = _fsExtra2.default.createWriteStream(zipFile);
     // 0 compression works with ArcGIS online but not Collector
     var archive = (0, _archiver2.default)('zip', { store: true });
-    // const archive = archiver('zip');
+    //const archive = archiver('zip');
     return new Promise(function (resolve, reject) {
         archive.on('error', function (err) {
             reject(err);
@@ -192,7 +212,17 @@ function generateDirectories(directory) {
         });
     });
 }
-function copyTiles(bounds, minzoom, maxzoom, token, layerPath) {
+
+function deleteTempDirectory(directory, zipFile) {
+    return new Promise(function (resolve, reject) {
+        _fsExtra2.default.remove(directory, null, function (err) {
+            if (err) reject(err);
+            resolve(zipFile);
+        });
+    });
+}
+
+function copyTiles(bounds, minzoom, maxzoom, token, format, layerPath) {
     // Register sources with tilelive
     // Will fail on http without retry true.
     (0, _tileliveHttp2.default)(_tilelive2.default, { retry: true });
@@ -207,8 +237,7 @@ function copyTiles(bounds, minzoom, maxzoom, token, layerPath) {
         maxzoom: maxzoom
     };
 
-    var extension = 'png';
-    var httpTemplate = 'http://api.tiles.mapbox.com/v4/digitalglobe.nal0g75k/{z}/{x}/{y}.' + extension + '?access_token=' + token;
+    var httpTemplate = 'http://api.tiles.mapbox.com/v4/digitalglobe.nal0g75k/{z}/{x}/{y}.' + format + '?access_token=' + token;
     var arcgisTemplate = 'arcgis://' + layerPath;
     return new Promise(function (resolve, reject) {
         _tilelive2.default.copy(httpTemplate, arcgisTemplate, options, function (err) {
@@ -219,7 +248,8 @@ function copyTiles(bounds, minzoom, maxzoom, token, layerPath) {
 }
 
 function xyz2tpk(bounds, minzoom, maxzoom, token, directory, callback) {
-    generateDirectories(directory).then(writeConf.bind(null, minzoom, maxzoom)).then(writeJson.bind(null, minzoom, maxzoom, bounds)).then(writeBounds.bind(null, bounds)).then(copyTiles.bind(null, bounds, minzoom, maxzoom, token)).then(ziptpk).then(function (zipFile) {
+    var format = 'jpg90';
+    generateDirectories(directory).then(writeLyrFile).then(writeConf.bind(null, minzoom, maxzoom, format)).then(writeJson.bind(null, minzoom, maxzoom, bounds)).then(writeBounds.bind(null, bounds)).then(copyTiles.bind(null, bounds, minzoom, maxzoom, token, format)).then(ziptpk).then(function (zipFile) {
         return callback(null, zipFile);
     }).catch(callback);
 }

@@ -12,7 +12,7 @@ import jsonfile from 'jsonfile';
 const DOMParser = xmldom.DOMParser;
 const templatePath = path.resolve(__dirname, '..', 'templates');
 
-export function writeConf(minzoom, maxzoom, paths) {
+export function writeConf(minzoom, maxzoom, format, paths) {
     const confPath = path.resolve(templatePath, 'templateConf.xml');
     return new Promise((resolve, reject) => {
         fs.readFile(confPath, (err, data) => {
@@ -30,7 +30,16 @@ export function writeConf(minzoom, maxzoom, paths) {
             nodesToRemove.forEach((node) => {
                 node.parentNode.removeChild(node);
             });
-            fs.writeFile(`${paths.layerPath}/Conf.xml`, doc, (error) => {
+            let formattedFormat = null;
+            if (format.substring(0, 3) === 'jpg') {
+                formattedFormat = 'JPEG';
+            } else {
+                formattedFormat = format.toUpperCase();
+            }
+            doc.getElementsByTagName('CacheTileFormat')[0].textContent =
+                formattedFormat;
+
+            fs.writeFile(`${paths.layerPath}/conf.xml`, doc, (error) => {
                 if (error) reject(error);
                 resolve(paths);
             });
@@ -55,7 +64,7 @@ export function writeBounds(bounds, paths) {
             doc.getElementsByTagName('YMin')[0].textContent = mercatorBounds[1];
             doc.getElementsByTagName('XMax')[0].textContent = mercatorBounds[2];
             doc.getElementsByTagName('YMax')[0].textContent = mercatorBounds[3];
-            fs.writeFile(`${paths.layerPath}/Conf.cdi`, doc, (error) => {
+            fs.writeFile(`${paths.layerPath}/conf.cdi`, doc, (error) => {
                 if (error) reject(error);
                 resolve(paths.layerPath);
             });
@@ -115,6 +124,16 @@ export function writeJson(minzoom, maxzoom, bounds, paths) {
     });
 }
 
+export function writeLyrFile(paths) {
+    const lyrFilePath = path.resolve(paths.layerPath, '..', 'Layers.lyr');
+    return new Promise((resolve, reject) => {
+        fs.writeFile(lyrFilePath, null, (err) => {
+            if (err) reject(err);
+            resolve(paths);
+        });
+    });
+}
+
 export function ziptpk(layerPath) {
     const tmpDirectory = path.resolve(layerPath, '..', '..', '..');
     const name = path.resolve(layerPath, '..', '..');
@@ -122,7 +141,7 @@ export function ziptpk(layerPath) {
     const output = fs.createWriteStream(zipFile);
     // 0 compression works with ArcGIS online but not Collector
     const archive = archiver('zip', { store: true });
-    // const archive = archiver('zip');
+    //const archive = archiver('zip');
     return new Promise((resolve, reject) => {
         archive.on('error', (err) => {
             reject(err);
@@ -151,7 +170,17 @@ export function generateDirectories(directory) {
         });
     });
 }
-export function copyTiles(bounds, minzoom, maxzoom, token, layerPath) {
+
+export function deleteTempDirectory(directory, zipFile) {
+    return new Promise((resolve, reject) => {
+        fs.remove(directory, null, (err) => {
+            if (err) reject(err);
+            resolve(zipFile);
+        });
+    });
+}
+
+export function copyTiles(bounds, minzoom, maxzoom, token, format, layerPath) {
     // Register sources with tilelive
     // Will fail on http without retry true.
     tileliveHttp(tilelive, { retry: true });
@@ -166,8 +195,7 @@ export function copyTiles(bounds, minzoom, maxzoom, token, layerPath) {
         maxzoom
     };
 
-    const extension = 'png';
-    const httpTemplate = `http://api.tiles.mapbox.com/v4/digitalglobe.nal0g75k/{z}/{x}/{y}.${extension}?access_token=${token}`;
+    const httpTemplate = `http://api.tiles.mapbox.com/v4/digitalglobe.nal0g75k/{z}/{x}/{y}.${format}?access_token=${token}`;
     const arcgisTemplate = `arcgis://${layerPath}`;
     return new Promise((resolve, reject) => {
         tilelive.copy(httpTemplate, arcgisTemplate, options, (err) => {
@@ -178,11 +206,13 @@ export function copyTiles(bounds, minzoom, maxzoom, token, layerPath) {
 }
 
 export function xyz2tpk(bounds, minzoom, maxzoom, token, directory, callback) {
+    const format = 'jpg90';
     generateDirectories(directory)
-        .then(writeConf.bind(null, minzoom, maxzoom))
+        .then(writeLyrFile)
+        .then(writeConf.bind(null, minzoom, maxzoom, format))
         .then(writeJson.bind(null, minzoom, maxzoom, bounds))
         .then(writeBounds.bind(null, bounds))
-        .then(copyTiles.bind(null, bounds, minzoom, maxzoom, token))
+        .then(copyTiles.bind(null, bounds, minzoom, maxzoom, token, format))
         .then(ziptpk)
         .then(zipFile => callback(null, zipFile))
         .catch(callback);
