@@ -36,6 +36,7 @@
     "archiver": "^1.1.0",
     "fs-extra": "^0.30.0",
     "jsonfile": "^2.4.0",
+    "mkdirp": "^0.5.1",
     "sphericalmercator": "^1.0.5",
     "tilejson": "^1.0.2",
     "tilelive": "^5.12.2",
