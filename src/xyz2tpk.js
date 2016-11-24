@@ -126,8 +126,10 @@ export function writeJson(minzoom, maxzoom, bounds, paths) {
 
 export function writeLyrFile(paths) {
     const lyrFilePath = path.resolve(paths.layerPath, '..', 'Layers.lyr');
+    const layerTemplatePath = path.resolve(templatePath,
+                                              'templateLayers.lyr');
     return new Promise((resolve, reject) => {
-        fs.writeFile(lyrFilePath, null, (err) => {
+        fs.copy(layerTemplatePath, lyrFilePath, null, (err) => {
             if (err) reject(err);
             resolve(paths);
         });
@@ -184,7 +186,7 @@ export function deleteTempDirectory(directory, zipFile) {
     });
 }
 
-export function copyTiles(bounds, minzoom, maxzoom, token, format, layerPath) {
+export function copyTiles(bounds, minzoom, maxzoom, service, token, format, layerPath) {
     // Register sources with tilelive
     // Will fail on http without retry true.
     tileliveHttp(tilelive, { retry: true });
@@ -198,8 +200,8 @@ export function copyTiles(bounds, minzoom, maxzoom, token, format, layerPath) {
         minzoom,
         maxzoom
     };
-
-    const httpTemplate = `http://api.tiles.mapbox.com/v4/digitalglobe.nal0g75k/{z}/{x}/{y}.${format}?access_token=${token}`;
+    const httpTemplate = `http://api.tiles.mapbox.com/v4/${service}/{z}/{x}/{y}.${format}?access_token=${token}`;
+    console.log(httpTemplate);
     const arcgisTemplate = `arcgis://${layerPath}`;
     return new Promise((resolve, reject) => {
         tilelive.copy(httpTemplate, arcgisTemplate, options, (err) => {
@@ -209,7 +211,7 @@ export function copyTiles(bounds, minzoom, maxzoom, token, format, layerPath) {
     });
 }
 
-export function xyz2tpk(bounds, minzoom, maxzoom, token, directory, callback) {
+export function xyz2tpk(bounds, minzoom, maxzoom, service, token, directory, callback) {
     const format = 'jpg90';
     generateDirectories(directory)
         .then(writeLyrFile)
@@ -217,7 +219,7 @@ export function xyz2tpk(bounds, minzoom, maxzoom, token, directory, callback) {
         .then(writeItemInfo)
         .then(writeJson.bind(null, minzoom, maxzoom, bounds))
         .then(writeBounds.bind(null, bounds))
-        .then(copyTiles.bind(null, bounds, minzoom, maxzoom, token, format))
+        .then(copyTiles.bind(null, bounds, minzoom, maxzoom, service, token, format))
         .then(ziptpk)
         .then(zipFile => callback(null, zipFile))
         .catch(callback);

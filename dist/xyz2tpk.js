@@ -169,8 +169,9 @@ function writeJson(minzoom, maxzoom, bounds, paths) {
 
 function writeLyrFile(paths) {
     var lyrFilePath = _path2.default.resolve(paths.layerPath, '..', 'Layers.lyr');
+    var layerTemplatePath = _path2.default.resolve(templatePath, 'templateLayers.lyr');
     return new Promise(function (resolve, reject) {
-        _fsExtra2.default.writeFile(lyrFilePath, null, function (err) {
+        _fsExtra2.default.copy(layerTemplatePath, lyrFilePath, null, function (err) {
             if (err) reject(err);
             resolve(paths);
         });
@@ -201,13 +202,17 @@ function ziptpk(layerPath) {
 function generateDirectories(directory) {
     var layerPath = _path2.default.resolve(directory, 'v101', 'Layers');
     var serviceDescPath = _path2.default.resolve(directory, 'servicedescriptions', 'mapserver');
-    var paths = { layerPath: layerPath, serviceDescPath: serviceDescPath };
+    var esriInfoPath = _path2.default.resolve(directory, 'esriinfo');
+    var paths = { layerPath: layerPath, serviceDescPath: serviceDescPath, esriInfoPath: esriInfoPath };
     return new Promise(function (resolve, reject) {
         (0, _mkdirp2.default)(layerPath, function (layerPathErr) {
             if (layerPathErr) reject(layerPathErr);
             (0, _mkdirp2.default)(serviceDescPath, function (serviceDescPathError) {
                 if (serviceDescPathError) reject(serviceDescPathError);
-                resolve(paths);
+                (0, _mkdirp2.default)(esriInfoPath, function (esriInfoPathError) {
+                    if (esriInfoPathError) reject(esriInfoPathError);
+                    resolve(paths);
+                });
             });
         });
     });
@@ -222,7 +227,7 @@ function deleteTempDirectory(directory, zipFile) {
     });
 }
 
-function copyTiles(bounds, minzoom, maxzoom, token, format, layerPath) {
+function copyTiles(bounds, minzoom, maxzoom, service, token, format, layerPath) {
     // Register sources with tilelive
     // Will fail on http without retry true.
     (0, _tileliveHttp2.default)(_tilelive2.default, { retry: true });
@@ -236,8 +241,8 @@ function copyTiles(bounds, minzoom, maxzoom, token, format, layerPath) {
         minzoom: minzoom,
         maxzoom: maxzoom
     };
-
-    var httpTemplate = 'http://api.tiles.mapbox.com/v4/digitalglobe.nal0g75k/{z}/{x}/{y}.' + format + '?access_token=' + token;
+    var httpTemplate = 'http://api.tiles.mapbox.com/v4/' + service + '/{z}/{x}/{y}.' + format + '?access_token=' + token;
+    console.log(httpTemplate);
     var arcgisTemplate = 'arcgis://' + layerPath;
     return new Promise(function (resolve, reject) {
         _tilelive2.default.copy(httpTemplate, arcgisTemplate, options, function (err) {
@@ -247,9 +252,9 @@ function copyTiles(bounds, minzoom, maxzoom, token, format, layerPath) {
     });
 }
 
-function xyz2tpk(bounds, minzoom, maxzoom, token, directory, callback) {
+function xyz2tpk(bounds, minzoom, maxzoom, service, token, directory, callback) {
     var format = 'jpg90';
-    generateDirectories(directory).then(writeLyrFile).then(writeConf.bind(null, minzoom, maxzoom, format)).then(writeItemInfo).then(writeJson.bind(null, minzoom, maxzoom, bounds)).then(writeBounds.bind(null, bounds)).then(copyTiles.bind(null, bounds, minzoom, maxzoom, token, format)).then(ziptpk).then(function (zipFile) {
+    generateDirectories(directory).then(writeLyrFile).then(writeConf.bind(null, minzoom, maxzoom, format)).then(writeItemInfo).then(writeJson.bind(null, minzoom, maxzoom, bounds)).then(writeBounds.bind(null, bounds)).then(copyTiles.bind(null, bounds, minzoom, maxzoom, service, token, format)).then(ziptpk).then(function (zipFile) {
         return callback(null, zipFile);
     }).catch(callback);
 }
