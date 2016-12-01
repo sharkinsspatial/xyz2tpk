@@ -3,7 +3,8 @@ import path from 'path';
 import xmldom from 'xmldom';
 import Sphericalmercator from 'sphericalmercator';
 import tilelive from 'tilelive';
-import tileliveArcGIS from 'tilelive-arcgis';
+//import tileliveArcGIS from 'tilelive-arcgis';
+import tileliveArcGIS from '../../tilelive-arcgis';
 import tileliveHttp from 'tilelive-http';
 import archiver from 'archiver';
 import mkdirp from 'mkdirp';
@@ -142,8 +143,8 @@ export function ziptpk(layerPath) {
     const zipFile = path.resolve(tmpDirectory, `${name}.tpk`);
     const output = fs.createWriteStream(zipFile);
     // 0 compression works with ArcGIS online but not Collector
-    const archive = archiver('zip', { store: true });
-    //const archive = archiver('zip');
+    //const archive = archiver('zip', { store: true });
+    const archive = archiver('zip');
     return new Promise((resolve, reject) => {
         archive.on('error', (err) => {
             reject(err);
@@ -201,7 +202,6 @@ export function copyTiles(bounds, minzoom, maxzoom, service, token, format, laye
         maxzoom
     };
     const httpTemplate = `http://api.tiles.mapbox.com/v4/${service}/{z}/{x}/{y}.${format}?access_token=${token}`;
-    console.log(httpTemplate);
     const arcgisTemplate = `arcgis://${layerPath}`;
     return new Promise((resolve, reject) => {
         tilelive.copy(httpTemplate, arcgisTemplate, options, (err) => {

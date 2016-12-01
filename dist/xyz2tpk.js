@@ -34,7 +34,7 @@ var _tilelive = require('tilelive');
 
 var _tilelive2 = _interopRequireDefault(_tilelive);
 
-var _tileliveArcgis = require('tilelive-arcgis');
+var _tileliveArcgis = require('../../tilelive-arcgis');
 
 var _tileliveArcgis2 = _interopRequireDefault(_tileliveArcgis);
 
@@ -57,6 +57,8 @@ var _jsonfile2 = _interopRequireDefault(_jsonfile);
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var DOMParser = _xmldom2.default.DOMParser;
+//import tileliveArcGIS from 'tilelive-arcgis';
+
 var templatePath = _path2.default.resolve(__dirname, '..', 'templates');
 
 function writeConf(minzoom, maxzoom, format, paths) {
@@ -184,8 +186,8 @@ function ziptpk(layerPath) {
     var zipFile = _path2.default.resolve(tmpDirectory, name + '.tpk');
     var output = _fsExtra2.default.createWriteStream(zipFile);
     // 0 compression works with ArcGIS online but not Collector
-    var archive = (0, _archiver2.default)('zip', { store: true });
-    //const archive = archiver('zip');
+    //const archive = archiver('zip', { store: true });
+    var archive = (0, _archiver2.default)('zip');
     return new Promise(function (resolve, reject) {
         archive.on('error', function (err) {
             reject(err);
@@ -242,7 +244,6 @@ function copyTiles(bounds, minzoom, maxzoom, service, token, format, layerPath) 
         maxzoom: maxzoom
     };
     var httpTemplate = 'http://api.tiles.mapbox.com/v4/' + service + '/{z}/{x}/{y}.' + format + '?access_token=' + token;
-    console.log(httpTemplate);
     var arcgisTemplate = 'arcgis://' + layerPath;
     return new Promise(function (resolve, reject) {
         _tilelive2.default.copy(httpTemplate, arcgisTemplate, options, function (err) {
