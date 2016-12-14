@@ -4,7 +4,6 @@ import xmldom from 'xmldom';
 import Sphericalmercator from 'sphericalmercator';
 import tilelive from 'tilelive';
 import tileliveArcGIS from 'tilelive-arcgis';
-//import tileliveArcGIS from '../../tilelive-arcgis';
 import tileliveHttp from 'tilelive-http';
 import archiver from 'archiver';
 import mkdirp from 'mkdirp';
