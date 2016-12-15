@@ -56,7 +56,6 @@ var _jsonfile2 = _interopRequireDefault(_jsonfile);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-//import tileliveArcGIS from '../../tilelive-arcgis';
 var DOMParser = _xmldom2.default.DOMParser;
 var templatePath = _path2.default.resolve(__dirname, '..', 'templates');
 
@@ -242,7 +241,7 @@ function copyTiles(bounds, minzoom, maxzoom, service, token, format, layerPath) 
         minzoom: minzoom,
         maxzoom: maxzoom
     };
-    var httpTemplate = 'http://api.tiles.mapbox.com/v4/' + service + '/{z}/{x}/{y}.' + format + '?access_token=' + token;
+    var httpTemplate = 'https://api.mapbox.com/styles/v1/digitalglobe/' + service + '/tiles/256/{z}/{x}/{y}?access_token=' + token;
     var arcgisTemplate = 'arcgis://' + layerPath;
     return new Promise(function (resolve, reject) {
         _tilelive2.default.copy(httpTemplate, arcgisTemplate, options, function (err) {
