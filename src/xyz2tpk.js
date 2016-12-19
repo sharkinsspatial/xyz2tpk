@@ -8,6 +8,8 @@ import tileliveHttp from 'tilelive-http';
 import archiver from 'archiver';
 import mkdirp from 'mkdirp';
 import jsonfile from 'jsonfile';
+import stream from 'stream';
+import _ from 'highland';
 
 const DOMParser = xmldom.DOMParser;
 const templatePath = path.resolve(__dirname, '..', 'templates');
@@ -191,11 +193,15 @@ export function copyTiles(bounds, minzoom, maxzoom, service, token, format, laye
     // Will fail on http without retry true.
     tileliveHttp(tilelive, { retry: true });
     tileliveArcGIS.registerProtocols(tilelive);
-
+    // Mapbox GL rate limit is 400/60s
+    const transform = new stream.PassThrough({ objectMode: true });
+    const limiter = _(transform).ratelimit(390, 60000)
+        .pipe(new stream.PassThrough({ objectMode: true }));
     const options = {
         type: 'scanline',
         close: 'true',
         timeout: 100000000,
+        transform: limiter,
         bounds,
         minzoom,
         maxzoom

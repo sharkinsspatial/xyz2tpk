@@ -54,6 +54,14 @@ var _jsonfile = require('jsonfile');
 
 var _jsonfile2 = _interopRequireDefault(_jsonfile);
 
+var _stream = require('stream');
+
+var _stream2 = _interopRequireDefault(_stream);
+
+var _highland = require('highland');
+
+var _highland2 = _interopRequireDefault(_highland);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var DOMParser = _xmldom2.default.DOMParser;
@@ -232,11 +240,14 @@ function copyTiles(bounds, minzoom, maxzoom, service, token, format, layerPath) 
     // Will fail on http without retry true.
     (0, _tileliveHttp2.default)(_tilelive2.default, { retry: true });
     _tileliveArcgis2.default.registerProtocols(_tilelive2.default);
-
+    // Mapbox GL rate limit is 400/60s
+    var transform = new _stream2.default.PassThrough({ objectMode: true });
+    var limiter = (0, _highland2.default)(transform).ratelimit(390, 60000).pipe(new _stream2.default.PassThrough({ objectMode: true }));
     var options = {
         type: 'scanline',
         close: 'true',
         timeout: 100000000,
+        transform: limiter,
         bounds: bounds,
         minzoom: minzoom,
         maxzoom: maxzoom
