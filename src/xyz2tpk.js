@@ -200,7 +200,7 @@ export function copyTiles(bounds, minzoom, maxzoom, service, token, format, laye
         minzoom,
         maxzoom
     };
-    const httpTemplate = `https://api.mapbox.com/styles/v1/digitalglobe/${service}/tiles/256/{z}/{x}/{y}?access_token=${token}`;
+    const httpTemplate = `http://api.tiles.mapbox.com/v4/${service}/{z}/{x}/{y}.${format}?access_token=${token}`;
     const arcgisTemplate = `arcgis://${layerPath}`;
     return new Promise((resolve, reject) => {
         tilelive.copy(httpTemplate, arcgisTemplate, options, (err) => {
