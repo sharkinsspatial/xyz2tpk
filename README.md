@@ -16,7 +16,7 @@ npm test
 ```
 ## Usage
 
-### `xyz2tpk(bounds, minzoom, maxzoom, token, directory, callback)`
+### `xyz2tpk(bounds, minzoom, maxzoom, service, token, directory, callback)`
 
 * `bounds` {Number} bounds in the form `[w, s, e, n]` in WGS84.
 * `minzoom` {Number} minimum zoom.
