@@ -72,7 +72,7 @@ export function writeBounds(bounds, paths) {
     });
 }
 
-export function writeItemInfo(paths) {
+export function writeItemInfo(bounds, paths) {
     const itemTemplatePath = path.resolve(templatePath, 'templateItem.pkinfo');
     const itemInfoTemplatePath = path.resolve(templatePath,
                                               'templateItemInfo.xml');
@@ -87,6 +87,24 @@ export function writeItemInfo(paths) {
                                 resolve(paths);
                             });
                 });
+        fs.readFile(itemInfoTemplatePath, (err, data) => {
+            if (err) reject(err);
+            const mercatorBounds = boundsToMercator(bounds);
+            const doc = new DOMParser().parseFromString(data.toString('utf-8'));
+            doc.getElementsByTagName('xmin')[0].textContent = mercatorBounds[0];
+            doc.getElementsByTagName('ymin')[0].textContent = mercatorBounds[1];
+            doc.getElementsByTagName('xmax')[0].textContent = mercatorBounds[2];
+            doc.getElementsByTagName('ymax')[0].textContent = mercatorBounds[3];
+            fs.writeFile(`${paths.esriInfoPath}/iteminfo.xml`, doc, (error) => {
+                if (error) reject(error);
+                fs.copy(itemInfoTemplatePath,
+                        `${paths.esriInfoPath}/item.pkinfo`,
+                        (copyError) => {
+                            if (copyError) reject(copyError);
+                            resolve(paths);
+                        });
+            });
+        });
     });
 }
 
@@ -143,7 +161,6 @@ export function ziptpk(layerPath) {
     const output = fs.createWriteStream(zipFile);
     // 0 compression works with ArcGIS online but not Collector
     const archive = archiver('zip', { store: true });
-    //const archive = archiver('zip');
     return new Promise((resolve, reject) => {
         archive.on('error', (err) => {
             reject(err);
@@ -200,7 +217,12 @@ export function copyTiles(bounds, minzoom, maxzoom, service, token, format, laye
         minzoom,
         maxzoom
     };
-    const httpTemplate = `http://api.tiles.mapbox.com/v4/${service}/{z}/{x}/{y}.${format}?access_token=${token}`;
+    let httpTemplate;
+    if (token) {
+        httpTemplate = `http://api.tiles.mapbox.com/v4/${service}/{z}/{x}/{y}.${format}?access_token=${token}`;
+    } else {
+        httpTemplate = `https://gisservices.datadoors.net/i3_ArcGIS/tile/${service}/{z}/{y}/{x}`;
+    }
     const arcgisTemplate = `arcgis://${layerPath}`;
     return new Promise((resolve, reject) => {
         tilelive.copy(httpTemplate, arcgisTemplate, options, (err) => {
@@ -215,7 +237,7 @@ export function xyz2tpk(bounds, minzoom, maxzoom, service, token, directory, cal
     generateDirectories(directory)
         .then(writeLyrFile)
         .then(writeConf.bind(null, minzoom, maxzoom, format))
-        .then(writeItemInfo)
+        .then(writeItemInfo.bind(null, bounds))
         .then(writeJson.bind(null, minzoom, maxzoom, bounds))
         .then(writeBounds.bind(null, bounds))
         .then(copyTiles.bind(null, bounds, minzoom, maxzoom, service, token, format))

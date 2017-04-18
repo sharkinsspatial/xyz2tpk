@@ -56,7 +56,6 @@ var _jsonfile2 = _interopRequireDefault(_jsonfile);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-//import tileliveArcGIS from '../../tilelive-arcgis';
 var DOMParser = _xmldom2.default.DOMParser;
 var templatePath = _path2.default.resolve(__dirname, '..', 'templates');
 
@@ -119,7 +118,7 @@ function writeBounds(bounds, paths) {
     });
 }
 
-function writeItemInfo(paths) {
+function writeItemInfo(bounds, paths) {
     var itemTemplatePath = _path2.default.resolve(templatePath, 'templateItem.pkinfo');
     var itemInfoTemplatePath = _path2.default.resolve(templatePath, 'templateItemInfo.xml');
     return new Promise(function (resolve, reject) {
@@ -128,6 +127,22 @@ function writeItemInfo(paths) {
             _fsExtra2.default.copy(itemInfoTemplatePath, paths.esriInfoPath + '/iteminfo.xml', function (error) {
                 if (error) reject(error);
                 resolve(paths);
+            });
+        });
+        _fsExtra2.default.readFile(itemInfoTemplatePath, function (err, data) {
+            if (err) reject(err);
+            var mercatorBounds = boundsToMercator(bounds);
+            var doc = new DOMParser().parseFromString(data.toString('utf-8'));
+            doc.getElementsByTagName('xmin')[0].textContent = mercatorBounds[0];
+            doc.getElementsByTagName('ymin')[0].textContent = mercatorBounds[1];
+            doc.getElementsByTagName('xmax')[0].textContent = mercatorBounds[2];
+            doc.getElementsByTagName('ymax')[0].textContent = mercatorBounds[3];
+            _fsExtra2.default.writeFile(paths.esriInfoPath + '/iteminfo.xml', doc, function (error) {
+                if (error) reject(error);
+                _fsExtra2.default.copy(itemInfoTemplatePath, paths.esriInfoPath + '/item.pkinfo', function (copyError) {
+                    if (copyError) reject(copyError);
+                    resolve(paths);
+                });
             });
         });
     });
@@ -186,7 +201,6 @@ function ziptpk(layerPath) {
     var output = _fsExtra2.default.createWriteStream(zipFile);
     // 0 compression works with ArcGIS online but not Collector
     var archive = (0, _archiver2.default)('zip', { store: true });
-    //const archive = archiver('zip');
     return new Promise(function (resolve, reject) {
         archive.on('error', function (err) {
             reject(err);
@@ -242,7 +256,12 @@ function copyTiles(bounds, minzoom, maxzoom, service, token, format, layerPath) 
         minzoom: minzoom,
         maxzoom: maxzoom
     };
-    var httpTemplate = 'http://api.tiles.mapbox.com/v4/' + service + '/{z}/{x}/{y}.' + format + '?access_token=' + token;
+    var httpTemplate = void 0;
+    if (token) {
+        httpTemplate = 'http://api.tiles.mapbox.com/v4/' + service + '/{z}/{x}/{y}.' + format + '?access_token=' + token;
+    } else {
+        httpTemplate = 'https://gisservices.datadoors.net/i3_ArcGIS/tile/' + service + '/{z}/{y}/{x}';
+    }
     var arcgisTemplate = 'arcgis://' + layerPath;
     return new Promise(function (resolve, reject) {
         _tilelive2.default.copy(httpTemplate, arcgisTemplate, options, function (err) {
@@ -254,7 +273,7 @@ function copyTiles(bounds, minzoom, maxzoom, service, token, format, layerPath) 
 
 function xyz2tpk(bounds, minzoom, maxzoom, service, token, directory, callback) {
     var format = 'jpg90';
-    generateDirectories(directory).then(writeLyrFile).then(writeConf.bind(null, minzoom, maxzoom, format)).then(writeItemInfo).then(writeJson.bind(null, minzoom, maxzoom, bounds)).then(writeBounds.bind(null, bounds)).then(copyTiles.bind(null, bounds, minzoom, maxzoom, service, token, format)).then(ziptpk).then(function (zipFile) {
+    generateDirectories(directory).then(writeLyrFile).then(writeConf.bind(null, minzoom, maxzoom, format)).then(writeItemInfo.bind(null, bounds)).then(writeJson.bind(null, minzoom, maxzoom, bounds)).then(writeBounds.bind(null, bounds)).then(copyTiles.bind(null, bounds, minzoom, maxzoom, service, token, format)).then(ziptpk).then(function (zipFile) {
         return callback(null, zipFile);
     }).catch(callback);
 }
