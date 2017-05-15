@@ -203,7 +203,7 @@ export function deleteTempDirectory(directory, zipFile) {
     });
 }
 
-export function copyTiles(bounds, minzoom, maxzoom, service, token, format, layerPath) {
+export function copyTiles(bounds, minzoom, maxzoom, url, layerPath) {
     // Register sources with tilelive
     // Will fail on http without retry true.
     tileliveHttp(tilelive, { retry: true });
@@ -217,30 +217,25 @@ export function copyTiles(bounds, minzoom, maxzoom, service, token, format, laye
         minzoom,
         maxzoom
     };
-    let httpTemplate;
-    if (token) {
-        httpTemplate = `http://api.tiles.mapbox.com/v4/${service}/{z}/{x}/{y}.${format}?access_token=${token}`;
-    } else {
-        httpTemplate = `https://gisservices.datadoors.net/i3_ArcGIS/tile/${service}/{z}/{y}/{x}`;
-    }
+
     const arcgisTemplate = `arcgis://${layerPath}`;
     return new Promise((resolve, reject) => {
-        tilelive.copy(httpTemplate, arcgisTemplate, options, (err) => {
+        tilelive.copy(url, arcgisTemplate, options, (err) => {
             if (err) reject(err);
             resolve(layerPath);
         });
     });
 }
 
-export function xyz2tpk(bounds, minzoom, maxzoom, service, token, directory, callback) {
-    const format = 'jpg90';
+export function xyz2tpk(bounds, minzoom, maxzoom, url, format, directory,
+                        callback) {
     generateDirectories(directory)
         .then(writeLyrFile)
         .then(writeConf.bind(null, minzoom, maxzoom, format))
         .then(writeItemInfo.bind(null, bounds))
         .then(writeJson.bind(null, minzoom, maxzoom, bounds))
         .then(writeBounds.bind(null, bounds))
-        .then(copyTiles.bind(null, bounds, minzoom, maxzoom, service, token, format))
+        .then(copyTiles.bind(null, bounds, minzoom, maxzoom, url))
         .then(ziptpk)
         .then(zipFile => callback(null, zipFile))
         .catch(callback);

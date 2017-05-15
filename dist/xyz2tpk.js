@@ -242,7 +242,7 @@ function deleteTempDirectory(directory, zipFile) {
     });
 }
 
-function copyTiles(bounds, minzoom, maxzoom, service, token, format, layerPath) {
+function copyTiles(bounds, minzoom, maxzoom, url, layerPath) {
     // Register sources with tilelive
     // Will fail on http without retry true.
     (0, _tileliveHttp2.default)(_tilelive2.default, { retry: true });
@@ -256,24 +256,18 @@ function copyTiles(bounds, minzoom, maxzoom, service, token, format, layerPath) 
         minzoom: minzoom,
         maxzoom: maxzoom
     };
-    var httpTemplate = void 0;
-    if (token) {
-        httpTemplate = 'http://api.tiles.mapbox.com/v4/' + service + '/{z}/{x}/{y}.' + format + '?access_token=' + token;
-    } else {
-        httpTemplate = 'https://gisservices.datadoors.net/i3_ArcGIS/tile/' + service + '/{z}/{y}/{x}';
-    }
+
     var arcgisTemplate = 'arcgis://' + layerPath;
     return new Promise(function (resolve, reject) {
-        _tilelive2.default.copy(httpTemplate, arcgisTemplate, options, function (err) {
+        _tilelive2.default.copy(url, arcgisTemplate, options, function (err) {
             if (err) reject(err);
             resolve(layerPath);
         });
     });
 }
 
-function xyz2tpk(bounds, minzoom, maxzoom, service, token, directory, callback) {
-    var format = 'jpg90';
-    generateDirectories(directory).then(writeLyrFile).then(writeConf.bind(null, minzoom, maxzoom, format)).then(writeItemInfo.bind(null, bounds)).then(writeJson.bind(null, minzoom, maxzoom, bounds)).then(writeBounds.bind(null, bounds)).then(copyTiles.bind(null, bounds, minzoom, maxzoom, service, token, format)).then(ziptpk).then(function (zipFile) {
+function xyz2tpk(bounds, minzoom, maxzoom, url, format, directory, callback) {
+    generateDirectories(directory).then(writeLyrFile).then(writeConf.bind(null, minzoom, maxzoom, format)).then(writeItemInfo.bind(null, bounds)).then(writeJson.bind(null, minzoom, maxzoom, bounds)).then(writeBounds.bind(null, bounds)).then(copyTiles.bind(null, bounds, minzoom, maxzoom, url)).then(ziptpk).then(function (zipFile) {
         return callback(null, zipFile);
     }).catch(callback);
 }
